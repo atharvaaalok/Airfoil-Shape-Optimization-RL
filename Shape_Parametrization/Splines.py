@@ -36,16 +36,11 @@ class CatmullRom_spline:
         self.CatmullRom_curves = []
         self.total_curves = len(ControlPoints_list) - 1
 
-
-        a = ControlPoints_list[0]
-        b = ControlPoints_list[1]
-        GhostPoint_0 = (a[0] + (a[0] - b[0]), a[1] + (a[1] - b[1]))
-        a = ControlPoints_list[-2]
-        b = ControlPoints_list[-1]
-        GhostPoint_1 = (b[0] + (b[0] - a[0]), b[1] + (b[1] - a[1]))
-        ControlPoints_list.insert(0, GhostPoint_0)
-        ControlPoints_list.append(GhostPoint_1)
-        print(ControlPoints_list)
+        cp_array = np.array(ControlPoints_list)
+        GhostPoint_0 = cp_array[0] + (cp_array[0] - cp_array[1])
+        GhostPoint_1 = cp_array[-1] + (cp_array[-1] - cp_array[-2])
+        ControlPoints_list.insert(0, tuple(GhostPoint_0.tolist()))
+        ControlPoints_list.append(tuple(GhostPoint_1.tolist()))
 
         for i in range(self.total_curves):
             curve_i = Curves.CatmullRom_curve(ControlPoints_list[i], ControlPoints_list[i + 1], ControlPoints_list[i + 2], ControlPoints_list[i + 3])
@@ -65,15 +60,14 @@ class CatmullRom_spline:
         return generated_points
 
 
-
 class B_spline:
 
     def __init__(self, ControlPoints_list):
         self.Bspline_curves = []
-        self.total_curves = len(ControlPoints_list)
+        self.total_curves = len(ControlPoints_list) - 3
 
-        for ControlPoints in ControlPoints_list:
-            curve_i = Curves.B_Spline_curve(*ControlPoints)
+        for i in range(self.total_curves):
+            curve_i = Curves.CatmullRom_curve(ControlPoints_list[i], ControlPoints_list[i + 1], ControlPoints_list[i + 2], ControlPoints_list[i + 3])
             self.Bspline_curves.append(curve_i)
     
     def generate_points(self, total_points):
