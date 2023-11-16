@@ -23,6 +23,7 @@ def Train_NN(input_data, output_values, model, learning_rate, epochs):
     optimizer = optim.Adam(model.parameters(), lr = learning_rate)
     
     # Training loop
+    print('Training the Neural Network\n' + 30 * '-')
     for epoch in range(epochs):
         optimizer.zero_grad()
         outputs = model(input_data)
