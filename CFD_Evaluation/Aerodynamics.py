@@ -41,9 +41,9 @@ def CFD(airfoil, Re, angle_of_attack = 0):
 
     # Set CFD evaluation parameters
     panel_count = 450
-    LE_TE_panel_density_ratio = 0.5
+    LE_TE_panel_density_ratio = 1
     Reynolds_num = Re
-    max_iter_count = 1000
+    max_iter_count = 100
 
     # Define the sequence of commands to execute to calculate the aerodynamic properties
     command_list = ['PLOP\n',                               # Go to plotting options menu
@@ -76,6 +76,11 @@ def CFD(airfoil, Re, angle_of_attack = 0):
     
     # Get the outputs from xfoil
     xfoil_stdout, xfoil_stderr = xfoil.communicate()
+    # try:
+    #     xfoil_stdout, xfoil_stderr = xfoil.communicate(timeout = 0.8)
+    # except:
+    #     aerodynamic_properties = None
+    #     return aerodynamic_properties
 
     # Extract the aerodynamic properties
     coefficients = xfoil_stdout.splitlines()[-4].split()

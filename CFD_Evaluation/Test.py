@@ -1,7 +1,6 @@
 import numpy as np
 import torch
-from ML_Modules.NeuralNetwork import NeuralNetwork, Train_NN
-from CFD_Evaluation import Aerodynamics
+import Aerodynamics
 import matplotlib.pyplot as plt
 
 # Create state and action lists
@@ -29,7 +28,7 @@ ax.set_aspect('equal', adjustable='box')
 # plt.show()
 
 # Define the experiment run count
-total_exp = 1
+total_exp = 5
 print('Running Experiments\n' + 30 * '-')
 for i_exp in range(total_exp):
     print(f'Experiment Count: {i_exp + 1}')
@@ -43,10 +42,11 @@ for i_exp in range(total_exp):
     a_temp = []
 
     # Define action scaling
-    a_scaling = 0.1
+    a_scaling = 1
 
     for i_a in range(num_actions):
-        a = torch.rand(pts_on_curve, 2) * a_scaling
+        print(i_a)
+        a = torch.rand(pts_on_curve, 2)
         # Actions for the first and the last point have to be the same to form a closed curve
         a[-1, :] = a[0, :]
         a_temp.append(a)
@@ -56,17 +56,26 @@ for i_exp in range(total_exp):
 
         # Get the aerodynamic coordinates
         airfoil_coordinates = s_prime.numpy()
+        print(airfoil_coordinates)
+
+        print('1')
 
         # Create airfoil object to analyze properties
         airfoil_name = 'my_airfoil'
         airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
 
+        print('2')
+
         # Get L/D ratio
         Reynolds_num = 1e6
         reward = airfoil.get_L_by_D(Reynolds_num)
+        print('2.5')
         if reward == None:
             reward = 0
         Rewards[i_a] = reward
+
+        print('3')
+        print()
 
     a_best = a_temp[torch.argmax(Rewards)]
 
@@ -78,37 +87,3 @@ for i_exp in range(total_exp):
     s_list.append(s_new)
 
 print()
-
-# Plot the new airfoil
-airfoil_coordinates = s_new.numpy()
-plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1])
-ax = plt.gca()
-ax.set_aspect('equal', adjustable='box')
-plt.show()
-
-
-S_input_list = []
-A_input_list = []
-
-for i in range(len(a_list)):
-    S_input_list.append(torch.cat((s_list[i][:, 0], s_list[i][:, 1])))
-    A_input_list.append(torch.cat((a_list[i][:, 0], a_list[i][:, 1])))
-
-# Train neural network using the states as input and the actions as the labeled outputs
-S = torch.stack(S_input_list)
-A = torch.stack(A_input_list)
-
-
-# Specify the size of the neural network and instantiate and object
-input_size = pts_on_curve * 2
-output_size = pts_on_curve * 2
-layer_size_list = [20, 20]
-
-NN_model = NeuralNetwork(input_size, output_size, layer_size_list)
-
-# Define hyperparameters
-learning_rate = 0.01
-training_epochs = 1000
-
-# Train the neural network
-Train_NN(S, A, NN_model, learning_rate, training_epochs)
