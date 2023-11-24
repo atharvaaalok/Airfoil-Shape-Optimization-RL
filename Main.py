@@ -61,6 +61,7 @@ for i_exp in range(total_exp):
         # Create airfoil object to analyze properties
         airfoil_name = f'my_airfoil{i_exp}{i_a}'
         airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
+        print(airfoil)
 
         # Get L/D ratio
         Reynolds_num = 1e6
