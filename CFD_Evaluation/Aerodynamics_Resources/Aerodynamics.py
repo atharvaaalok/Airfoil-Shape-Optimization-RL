@@ -1,6 +1,6 @@
 import subprocess
 import numpy as np
-
+import os
 
 class Airfoil:
     def __init__(self, airfoil_coordinates, airfoil_name):
@@ -33,11 +33,12 @@ class Airfoil:
 def CFD(airfoil, Re, angle_of_attack = 0):
 
     # Make airfoil coordinate data file
-    airfoil_coord_filename = 'Airfoil_Coordinates.dat'
+    airfoil_coord_filename = os.path.dirname(__file__) + '/Airfoil_Coordinate_Files/' + airfoil.name + '.dat'
     np.savetxt(airfoil_coord_filename, airfoil.coordinates, delimiter = ',')
 
     # Start Xfoil
-    xfoil = subprocess.Popen('xfoil.exe', stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True)
+    xfoil_path = os.path.dirname(__file__) + '/xfoil.exe'
+    xfoil = subprocess.Popen(xfoil_path, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True)
 
     # Set CFD evaluation parameters
     panel_count = 450
@@ -76,11 +77,9 @@ def CFD(airfoil, Re, angle_of_attack = 0):
     
     # Get the outputs from xfoil
     xfoil_stdout, xfoil_stderr = xfoil.communicate()
-    # try:
-    #     xfoil_stdout, xfoil_stderr = xfoil.communicate(timeout = 0.8)
-    # except:
-    #     aerodynamic_properties = None
-    #     return aerodynamic_properties
+
+    # Remove the extra airfoil coordinate file created
+    os.remove(airfoil_coord_filename)
 
     # Extract the aerodynamic properties
     coefficients = xfoil_stdout.splitlines()[-4].split()

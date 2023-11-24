@@ -1,8 +1,9 @@
 import numpy as np
 import torch
 from ML_Modules.NeuralNetwork import NeuralNetwork, Train_NN
-from CFD_Evaluation import Aerodynamics
+from CFD_Evaluation.Aerodynamics_Resources import Aerodynamics
 import matplotlib.pyplot as plt
+
 
 # Create state and action lists
 s_list = []
@@ -37,7 +38,7 @@ for i_exp in range(total_exp):
     s = s_list[i_exp]
 
     # Generate random actions to take
-    num_actions = 5
+    num_actions = 5 
     # Calculate the L/D ratio for each new state resulting from the actions and determine the best action
     Rewards = torch.zeros(num_actions)
     a_temp = []
@@ -58,12 +59,13 @@ for i_exp in range(total_exp):
         airfoil_coordinates = s_prime.numpy()
 
         # Create airfoil object to analyze properties
-        airfoil_name = 'my_airfoil'
+        airfoil_name = f'my_airfoil{i_exp}{i_a}'
         airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
 
         # Get L/D ratio
         Reynolds_num = 1e6
         reward = airfoil.get_L_by_D(Reynolds_num)
+        print(reward)
         if reward == None:
             reward = 0
         Rewards[i_a] = reward
@@ -99,7 +101,7 @@ S = torch.stack(S_input_list)
 A = torch.stack(A_input_list)
 
 
-# Specify the size of the neural network and instantiate and object
+# Specify the size of the neural network and instantiate an object
 input_size = pts_on_curve * 2
 output_size = pts_on_curve * 2
 layer_size_list = [20, 20]

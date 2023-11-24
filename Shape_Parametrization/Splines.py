@@ -1,5 +1,11 @@
 import numpy as np
-import Curves
+
+if __package__ is None or __package__ == '':
+    # uses current directory visibility
+    import Curves
+else:
+    # uses current package visibility
+    from . import Curves
 
 
 class Bezier_spline:
