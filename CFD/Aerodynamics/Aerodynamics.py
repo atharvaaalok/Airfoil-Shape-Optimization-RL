@@ -15,7 +15,11 @@ class Airfoil:
         aerodynamic_properties = self.get_aerodynamic_properties(Re, angle_of_attack)
         if aerodynamic_properties is None:
             return None
-        return aerodynamic_properties['CL'] / aerodynamic_properties['CD']
+        try:
+            CL_by_CD = aerodynamic_properties['CL'] / aerodynamic_properties['CD']
+        except ZeroDivisionError:
+            CL_by_CD = None
+        return CL_by_CD
 
     def get_CL(self, Re, angle_of_attack = 0):
         aerodynamic_properties = self.get_aerodynamic_properties(Re, angle_of_attack)
