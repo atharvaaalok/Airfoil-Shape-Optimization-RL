@@ -31,17 +31,28 @@ class Airfoil:
 
 
 def CFD(airfoil, Re, angle_of_attack = 0):
+    
+    coordinate_file_directory = '/Airfoil_Coordinates/'
 
-    # Make airfoil coordinate data file
-    airfoil_coord_filename = os.path.dirname(__file__) + '/Airfoil_Coordinate_Files/' + airfoil.name + '.dat'
-    np.savetxt(airfoil_coord_filename, airfoil.coordinates, delimiter = ',')
+    # Get relative path to the directory where to store the airfoil coordinate files
+    top_level_script_directory = os.getcwd()
+    aerodynamics_module_directory = os.path.dirname(__file__)
+    relative_path_xfoil = aerodynamics_module_directory[len(top_level_script_directory) + 1:] + coordinate_file_directory
+
+    # Get the different file paths necessary to save the coordinate file and then retrieve using airfoil
+    airfoil_coord_filename = airfoil.name + '.dat'
+    airfoil_save_path = os.path.dirname(__file__) + coordinate_file_directory + airfoil_coord_filename
+    xfoil_file_path = relative_path_xfoil + airfoil_coord_filename
+
+    # Save the airfoil coordinate file
+    np.savetxt(airfoil_save_path, airfoil.coordinates, delimiter = ',')
 
     # Start Xfoil
     xfoil_path = os.path.dirname(__file__) + '/xfoil.exe'
     xfoil = subprocess.Popen(xfoil_path, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, text = True)
 
     # Set CFD evaluation parameters
-    panel_count = 450
+    panel_count = 120
     LE_TE_panel_density_ratio = 1
     Reynolds_num = Re
     max_iter_count = 100
@@ -50,7 +61,7 @@ def CFD(airfoil, Re, angle_of_attack = 0):
     command_list = ['PLOP\n',                               # Go to plotting options menu
                     'G\n',                                  # Switch off graphical display 
                     '\n',
-                    f'load {airfoil_coord_filename}\n',
+                    f'load {xfoil_file_path}\n',
                     f'{airfoil.name}\n',
                     'PPAR\n',                               # go to panel menu
                     f'n {panel_count}\n',                   # set panel count
@@ -79,7 +90,7 @@ def CFD(airfoil, Re, angle_of_attack = 0):
     xfoil_stdout, xfoil_stderr = xfoil.communicate()
 
     # Remove the extra airfoil coordinate file created
-    os.remove(airfoil_coord_filename)
+    os.remove(airfoil_save_path)
 
     # Extract the aerodynamic properties
     coefficients = xfoil_stdout.splitlines()[-4].split()

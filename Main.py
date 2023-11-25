@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from ML_Modules.NeuralNetwork import NeuralNetwork, Train_NN
-from CFD_Evaluation.Aerodynamics_Resources import Aerodynamics
+from CFD.Aerodynamics import Aerodynamics
 import matplotlib.pyplot as plt
 
 
@@ -9,25 +9,22 @@ import matplotlib.pyplot as plt
 s_list = []
 a_list = []
 
-# Total number of points to represent the shape
-pts_on_curve = 8
-
 # Generate initial state
-theta = torch.linspace(0, 2 * torch.pi, pts_on_curve)
-r = 1
-x0 = r * torch.cos(theta)
-y0 = r * torch.sin(theta)
-
-s0 = torch.column_stack((x0, y0))
-s0[-1, :] = s0[0, :]
+s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
 s_list.append(s0)
+
+# Total number of points to represent the shape
+pts_on_curve = s0.shape[0]
+action_idx = [1, 2, 3, 5, 6]
+action_dim = len(action_idx)
 
 # Plot the initial airfoil
 airfoil_coordinates = s0.numpy()
-plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1])
+plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1], marker = 'o')
 ax = plt.gca()
 ax.set_aspect('equal', adjustable='box')
 # plt.show()
+
 
 # Define the experiment run count
 total_exp = 1
@@ -40,17 +37,24 @@ for i_exp in range(total_exp):
     # Generate random actions to take
     num_actions = 5 
     # Calculate the L/D ratio for each new state resulting from the actions and determine the best action
-    Rewards = torch.zeros(num_actions)
+    Rewards = torch.zeros(num_actions + 1)
     a_temp = []
 
-    # Define action scaling
-    a_scaling = 0.1
+    # Define action scaling properties
+    step = 0.0075
+    p = 0.1
+    jump = step / ((i_exp + 1) ** p)
 
-    for i_a in range(num_actions):
-        a = torch.rand(pts_on_curve, 2) * a_scaling
-        # Actions for the first and the last point have to be the same to form a closed curve
-        a[-1, :] = a[0, :]
-        a_temp.append(a)
+    for i_a in range(num_actions + 1):
+        # Generate actions and make sure that actions are only taken for the movable points and the fixed points at (1, 0) and (0, 0) are untouched
+        # Also generate an action that does not change the state (delta_x/y = 0) to ensure that if the current state is best, don't change it
+        if i_a == num_actions:
+            a = torch.zeros(pts_on_curve, 2)
+            a_temp.append(a)
+        else:        
+            a = torch.zeros(pts_on_curve, 2)
+            a[action_idx, :] = jump * torch.rand(action_dim, 2)
+            a_temp.append(a)
 
         # Get new states from current state and the generated action
         s_prime = s + a
@@ -61,14 +65,14 @@ for i_exp in range(total_exp):
         # Create airfoil object to analyze properties
         airfoil_name = f'my_airfoil{i_exp}{i_a}'
         airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
-        print(airfoil)
 
         # Get L/D ratio
         Reynolds_num = 1e6
         reward = airfoil.get_L_by_D(Reynolds_num)
         print(reward)
         if reward == None:
-            reward = 0
+            # If xfoil doesn't converge give a large negative reward
+            reward = -1000
         Rewards[i_a] = reward
 
     a_best = a_temp[torch.argmax(Rewards)]
@@ -84,7 +88,7 @@ print()
 
 # Plot the new airfoil
 airfoil_coordinates = s_new.numpy()
-plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1])
+plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1], marker = 'o')
 ax = plt.gca()
 ax.set_aspect('equal', adjustable='box')
 plt.show()

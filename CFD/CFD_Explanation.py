@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Aerodynamics_Resources import Aerodynamics
+from Aerodynamics import Aerodynamics
 
 import time
 
@@ -10,7 +10,7 @@ import concurrent.futures
 
 def L_by_D_func(airfoil_name):
      # Get coordinates of airfoil
-    airfoil_coordinates = np.loadtxt('Aerodynamics_Resources/Airfoil_Database/' + airfoil_name + '.dat')
+    airfoil_coordinates = np.loadtxt('Aerodynamics/Airfoil_Database/' + airfoil_name + '.dat')
 
     # Create airfoil object to analyze properties
     airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
