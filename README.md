@@ -10,7 +10,7 @@ The central part of our method is a reinforcement learning agent whose goal is t
 
 
 <p align="center">
-  <img src="Resources/Original_RL_Idea.png" width = "350">
+  <img src="Resources/Original_RL_Idea.png" width = "400">
   </br>
   <b>Overview of RL as an approach to attack the problem of airfoil design.</b>
   </br>
@@ -18,7 +18,7 @@ The central part of our method is a reinforcement learning agent whose goal is t
 </p>
 
 <p align="center">
-  <img src="Resources/SARS.png" width = "400">
+  <img src="Resources/SARS.png" width = "450">
   </br>
   <b>One step of an airfoil agent. Actions are taken to change the shape.</b>
   </br>
@@ -26,7 +26,7 @@ The central part of our method is a reinforcement learning agent whose goal is t
 </p>
 
 <p align="center">
-  <img src="Resources/Actor_Critic_Approach.png">
+  <img src="Resources/Actor_Critic_Approach.png" width = "750">
   </br>
   <b>Actor-Critic Deep Reinforcement Learning architecture to take actions given states.</b>
   </br>
