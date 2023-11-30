@@ -3,6 +3,7 @@ import torch
 class Trajectory:
     def __init__(self, s0, T, policy_params, MDP_functions, parallelize = False):
         self.s0 = s0
+        self.r0 = torch.tensor(0.0)
         self.T = T
         self.SARS = []
         self.action_log_prob = torch.zeros(T)
@@ -21,6 +22,8 @@ class Trajectory:
         reward_list = []
         # Get the first state
         s = self.s0
+        # Generate reward for the first state
+        self.r0 = generate_reward(s, s, s)
         for t in range(self.T):
             # Generate action given the state
             a, action_log_prob = generate_action(s, policy_params)
@@ -56,6 +59,11 @@ class Trajectory:
     
     def get_SAS_list(self):
         return [(SARS.s.detach(), SARS.a.detach(), SARS.s_new.detach()) for SARS in self.SARS]
+    
+    def use_delta_r(self, use = False):
+        if use:
+            self.rewards[1:] = torch.diff(self.rewards)
+            self.rewards[0] = self.rewards[0] - self.r0
 
 
 

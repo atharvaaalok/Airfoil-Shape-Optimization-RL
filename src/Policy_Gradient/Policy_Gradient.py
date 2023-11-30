@@ -42,7 +42,7 @@ if __name__ == '__main__':
     MDP_functions = {'generate_action': generate_action, 'generate_next_state': generate_next_state, 'generate_reward': generate_reward}
 
     # Set parallel compute to true if you want to generate trajectories in parallel
-    parallelize = True
+    parallelize = False
 
     # Training loop
     for epoch in range(epochs):
@@ -72,6 +72,10 @@ if __name__ == '__main__':
                 trajectory.set_rewards(rewards)
         
 
+        # Define if to set reward to delta L/D instead of L/D
+        for trajectory in trajectory_list:
+            trajectory.use_delta_r(use = True)
+        
         # Get total reward and compute gradient objective loss
         Total_Reward = calculate_total_reward(trajectory_list)
         J = calculate_gradient_objective(trajectory_list, causality = False, baseline = False)
