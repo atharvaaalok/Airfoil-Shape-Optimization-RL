@@ -115,3 +115,10 @@ def calculate_gradient_objective(trajectory_list, causality = False, baseline = 
 def calculate_total_reward(trajectory_list):
     reward_mat = torch.stack([trajectory.rewards for trajectory in trajectory_list])
     return reward_mat.sum()
+
+
+def get_trajectory_rewards(SAS_list):
+    reward_list = []
+    for s, a, s_new in SAS_list:
+        reward_list.append(generate_reward(s, a, s_new))
+    return reward_list
