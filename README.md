@@ -20,7 +20,7 @@ The central part of our method is a reinforcement learning agent whose goal is t
 <p align="center">
   <img src="Resources/SARS.png" width = "450">
   </br>
-  <b>One step of an airfoil agent. Actions are taken to change the shape.</b>
+  <b>One step of the RL agent. Actions are taken to change the airfoil shape.</b>
   </br>
   </br>
 </p>
