@@ -8,9 +8,31 @@ Aircraft design methods used today to determine shape, structure and size begin 
 The central part of our method is a reinforcement learning agent whose goal is to achieve an airfoil shape that maximizes the lift-to-drag ratio (its reward function). The RL agent holds a shape, which can be evaluated by a Computational Fluid Dynamics (CFD) solver (its environment) to give back its lift-to-drag ratio. The agent makes sequential changes to the shape (its actions) until an optimal shape is reached. The goal of the agent is to learn a policy that intelligently makes changes to efficiently reach the best design. This is represented in the figure below:
 
 
+
 <p align="center">
-  <img src="Resources/RL_Architecture.png">
+  <img src="Resources/Original_RL_Idea.png" width = "350">
+  </br>
+  <b>Overview of RL as an approach to attack the problem of airfoil design.</b>
+  </br>
+  </br>
 </p>
+
+<p align="center">
+  <img src="Resources/SARS.png" width = "400">
+  </br>
+  <b>One step of an airfoil agent. Actions are taken to change the shape.</b>
+  </br>
+  </br>
+</p>
+
+<p align="center">
+  <img src="Resources/Actor_Critic_Approach.png">
+  </br>
+  <b>Actor-Critic Deep Reinforcement Learning architecture to take actions given states.</b>
+  </br>
+  </br>
+</p>
+
 
 ## Contributors
 - Parth Prashant Lathi
