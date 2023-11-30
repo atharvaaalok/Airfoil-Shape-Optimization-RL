@@ -1,21 +1,22 @@
 import numpy as np
 import torch
-from ML_Modules.NeuralNetwork import NeuralNetwork, Train_NN
-from CFD.Aerodynamics import Aerodynamics
+from ..ML_Modules.NeuralNetwork import NeuralNetwork, Train_NN
+from ..CFD.Aerodynamics import Aerodynamics
 import matplotlib.pyplot as plt
 
+torch.manual_seed(42)
 
 # Create state and action lists
 s_list = []
 a_list = []
 
 # Generate initial state
-s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
+s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [0.75, -0.05], [1, 0]])
 s_list.append(s0)
 
 # Total number of points to represent the shape
 pts_on_curve = s0.shape[0]
-action_idx = [1, 2, 3, 5, 6]
+action_idx = [1, 2, 3, 5, 6, 7]
 action_dim = len(action_idx)
 
 # Plot the initial airfoil
@@ -27,7 +28,7 @@ ax.set_aspect('equal', adjustable='box')
 
 
 # Define the experiment run count
-total_exp = 1
+total_exp = 10
 print('Running Experiments\n' + 30 * '-')
 for i_exp in range(total_exp):
     print(f'Experiment Count: {i_exp + 1}')
@@ -35,7 +36,7 @@ for i_exp in range(total_exp):
     s = s_list[i_exp]
 
     # Generate random actions to take
-    num_actions = 5 
+    num_actions = 10
     # Calculate the L/D ratio for each new state resulting from the actions and determine the best action
     Rewards = torch.zeros(num_actions + 1)
     a_temp = []
@@ -59,7 +60,7 @@ for i_exp in range(total_exp):
         # Get new states from current state and the generated action
         s_prime = s + a
 
-        # Get the aerodynamic coordinates
+        # Get the airfoil coordinates
         airfoil_coordinates = s_prime.numpy()
 
         # Create airfoil object to analyze properties
@@ -69,13 +70,16 @@ for i_exp in range(total_exp):
         # Get L/D ratio
         Reynolds_num = 1e6
         reward = airfoil.get_L_by_D(Reynolds_num)
-        print(reward)
+        # print(reward)
         if reward == None:
             # If xfoil doesn't converge give a large negative reward
             reward = -1000
         Rewards[i_a] = reward
 
-    a_best = a_temp[torch.argmax(Rewards)]
+    idx_max_reward = torch.argmax(Rewards)
+    a_best = a_temp[idx_max_reward]
+    max_reward = Rewards[idx_max_reward].item()
+    print(f'Max reward: {max_reward}\n')
 
     # Get the new state corresponding to the best action
     s_new = s + a_best
@@ -93,6 +97,10 @@ ax = plt.gca()
 ax.set_aspect('equal', adjustable='box')
 plt.show()
 
+# Visualize the final airfoil in xfoil
+airfoil_name = 'final_airfoil'
+airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
+airfoil.visualize()
 
 S_input_list = []
 A_input_list = []
