@@ -22,6 +22,10 @@ torch.manual_seed(42)
 random.seed(42)
 
 
+
+# Define an initial state to start training and then final airfoil shape optimization from
+s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
+
 # Define constants and hyperparameters
 state_dim = 5 * 2
 action_dim = 5 * 2
@@ -44,10 +48,7 @@ use_delta_LbyD = False
 use_causality = False
 use_baseline = True
 
-# Define an initial state to start training and then final airfoil shape optimization from
-s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
 
-        
 
 if __name__ == '__main__':
 
