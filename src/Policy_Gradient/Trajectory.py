@@ -75,13 +75,12 @@ class SARS_tuple:
         self.s_new = s_new
 
 
-def Generate_trajectories(T, N, policy_params, MDP_functions, parallelize):
+def Generate_trajectories(s0_list, T, N, policy_params, MDP_functions, parallelize):
     trajectory_list = []
     # Generate training batch
     for i_traj in range(N):
         rewards = []
-        s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
-
+        s0 = s0_list[i_traj]
         trajectory = Trajectory(s0, T, policy_params, MDP_functions, parallelize = parallelize)
         trajectory_list.append(trajectory)
 
@@ -99,3 +98,11 @@ def Generate_trajectories(T, N, policy_params, MDP_functions, parallelize):
             trajectory.set_rewards(rewards)
     
     return trajectory_list
+
+
+def add_valid_initial_states(trajectory_list, Valid_initial_states):
+    for trajectory in trajectory_list:
+        for SARS in trajectory.SARS:
+            if SARS.r > NEGATIVE_REWARD + 1:
+                # Add the new state in the transition to the list of valid initial states
+                Valid_initial_states.append(SARS.s_new)

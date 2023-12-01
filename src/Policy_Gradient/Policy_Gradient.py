@@ -6,8 +6,10 @@ from torch import optim
 
 import matplotlib.pyplot as plt
 
+import random
+
 from .Helper import *
-from .Trajectory import Trajectory, Generate_trajectories
+from .Trajectory import Trajectory, Generate_trajectories, add_valid_initial_states
 
 
 # Define where to store training progress and the final trained model
@@ -17,7 +19,7 @@ training_performance_plot_path = os.path.dirname(__file__) + '/Progress_Checkpoi
 
 # Set seed for reproducibity
 torch.manual_seed(42)
-
+random.seed(42)
 
 
 # Define constants and hyperparameters
@@ -28,9 +30,9 @@ layer_size_list = [100, 100]
 learning_rate_policy_net = 0.001
 learning_rate_Sigma = 0.001
 
-T = 20 # Episode length
+T = 10 # Episode length
 N = 10 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
-epochs = 200 # Total policy improvements - total training updates
+epochs = 100 # Total policy improvements - total training updates
 
 # Set parallel compute to true if you want to generate trajectories in parallel
 parallelize = False
@@ -42,7 +44,10 @@ use_delta_LbyD = False
 use_causality = False
 use_baseline = True
 
+# Define an initial state to start training and then final airfoil shape optimization from
+s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
 
+        
 
 if __name__ == '__main__':
 
@@ -62,18 +67,21 @@ if __name__ == '__main__':
     # Prepare for Training
     # Initialize epoch to 0
     epoch = 0
+    # Keep track of valid initial states to start trajectory generation from
+    Valid_initial_states = [s0]
+    # Make reward and epoch lists to plot the training process
+    Total_Reward_list = []
+    Epoch_list = []
     
     # Load progress if checkpoint is available
     if os.path.exists(checkpoint_path):
-        epoch, policy_net, Sigma, optimizer = load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer, learning_rate_policy_net, learning_rate_Sigma)
+        epoch, policy_net, Sigma, optimizer, Valid_initial_states, Epoch_list, Total_Reward_list = load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer, learning_rate_policy_net, learning_rate_Sigma, Valid_initial_states, Epoch_list, Total_Reward_list)
 
     # Set policy parameters and the MDP functions required to generate trajectories
     policy_params = {'policy_net': policy_net, 'Sigma': Sigma}
     MDP_functions = {'generate_action': generate_action, 'generate_next_state': generate_next_state, 'generate_reward': generate_reward}
 
-    # Make reward and epoch lists to plot the training process
-    Total_Reward_list = []
-    Epoch_list = []
+    
     # Prepare plot for dynamic updating
     plt.ion() # Turn on interactive mode
     plt.xlabel('Epochs')
@@ -82,10 +90,17 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 
+    # print(f'Total valid initial states: {len(Valid_initial_states)}')
     while epoch < epochs:
 
+        # Select initial states to start trajectory generation from. One s0 for each trajectory
+        s0_list = random.choices(Valid_initial_states, k = N)
+
         # Generate trajectories - policy rollout
-        trajectory_list = Generate_trajectories(T, N, policy_params, MDP_functions, parallelize)
+        trajectory_list = Generate_trajectories(s0_list, T, N, policy_params, MDP_functions, parallelize)
+
+        # Update list of valid initial states
+        add_valid_initial_states(trajectory_list, Valid_initial_states)
 
         # Define if to set reward to delta L/D instead of L/D
         for trajectory in trajectory_list:
@@ -108,8 +123,9 @@ if __name__ == '__main__':
         if (epoch + 1) % (epochs // 20) == 0:
             # print(f"Episode {epoch + 1}/{epochs} | Policy Loss: {J.item()}")
             print(f"Episode {epoch + 1}/{epochs} | Total Reward: {Total_Reward.item()}")
-            save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer)
-            plt.plot(Epoch_list, Total_Reward_list, '-o', color = 'b')
+            # print(f'Total valid initial states: {len(Valid_initial_states)}')
+            save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer, Valid_initial_states, Epoch_list, Total_Reward_list)
+            plt.plot(Epoch_list[0: epoch + 1: epochs // 20], Total_Reward_list[0: epoch + 1: epochs // 20], '-o', color = 'b')
             plt.pause(0.1)
         
         # Update epoch

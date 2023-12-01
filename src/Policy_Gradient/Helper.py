@@ -3,8 +3,12 @@ from torch import nn
 from torch import optim
 import numpy as np
 
+import random
+
 from ..CFD.Aerodynamics import Aerodynamics
 
+
+NEGATIVE_REWARD = -50
 
 # Generate next state given the current state and action
 def generate_next_state(s_current, a_current):
@@ -28,7 +32,7 @@ def generate_reward(s, a, s_new, airfoil_name = 'my_airfoil'):
 
     # If Xfoil did not converge give large negative reward
     if L_by_D_ratio == None:
-        L_by_D_ratio = -50
+        L_by_D_ratio = NEGATIVE_REWARD
         
     return L_by_D_ratio
 
@@ -124,7 +128,7 @@ def get_trajectory_rewards(SAS_list):
 
 
 
-def load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer = None, learning_rate_policy_net = None, learning_rate_Sigma = None):
+def load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer = None, learning_rate_policy_net = None, learning_rate_Sigma = None, Valid_initial_states = None, Epoch_list = None, Total_Reward_list = None):
 
     # Optimizer is None if trained model is to be loaded
     if optimizer == None:
@@ -143,15 +147,23 @@ def load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer = None, learni
     ])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     torch.set_rng_state(checkpoint['seed_state'])
+    Valid_initial_states = checkpoint['Valid_initial_states']
+    random.setstate(checkpoint['random_module_state'])
+    Epoch_list = checkpoint['Epoch_list']
+    Total_Reward_list = checkpoint['Total_Reward_list']
 
-    return (epoch, policy_net, Sigma, optimizer)
+    return (epoch, policy_net, Sigma, optimizer, Valid_initial_states, Epoch_list, Total_Reward_list)
 
-def save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer):
+def save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer, Valid_initial_states, Epoch_list, Total_Reward_list):
     checkpoint = {
         'epoch': epoch + 1,
         'policy_net_state_dict': policy_net.state_dict(),
         'Sigma': Sigma,
         'optimizer_state_dict': optimizer.state_dict(),
-        'seed_state': torch.get_rng_state()
+        'seed_state': torch.get_rng_state(),
+        'Valid_initial_states': Valid_initial_states,
+        'random_module_state': random.getstate(),
+        'Epoch_list': Epoch_list,
+        'Total_Reward_list': Total_Reward_list
     }
     torch.save(checkpoint, checkpoint_path)
