@@ -11,6 +11,12 @@ import random
 from .Helper import *
 from .Trajectory import Trajectory, Generate_trajectories, add_valid_initial_states
 
+import datetime
+
+# Print start time
+current_time = datetime.datetime.now()
+formatted_time = current_time.strftime("%H:%M:%S")  # Format as HH:MM:SS
+print("Formatted time:", formatted_time)
 
 # Define where to store training progress and the final trained model
 checkpoint_path = os.path.dirname(__file__) + '/Progress_Checkpoint/Checkpoint.pth'
@@ -142,3 +148,8 @@ if __name__ == '__main__':
     # Turn off plot interactive mode and save the plot
     plt.savefig(training_performance_plot_path)
     plt.ioff()
+
+    # Print end time
+    current_time = datetime.datetime.now()
+    formatted_time = current_time.strftime("%H:%M:%S")  # Format as HH:MM:SS
+    print("Formatted time:", formatted_time)
