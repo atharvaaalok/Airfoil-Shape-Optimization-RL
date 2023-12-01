@@ -27,13 +27,13 @@ policy_params = {'policy_net': policy_net, 'Sigma': Sigma}
 MDP_functions = {'generate_action': generate_action, 'generate_next_state': generate_next_state, 'generate_reward': generate_reward}
 
 
-# Now take actions according to policy to generate an airfoil
-# Initialize a state
-s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
 
+
+# Now take actions according to the trained policy to generate an airfoil
+### Change only the Total_improvements variable below in this file
 Total_improvements = 30
 # Run for long time to generate optimized airfoil - don't calculate rewards if the goal is just shape optimization
-airfoil_gen_trajectory = Trajectory(s0, Total_improvements, policy_params, MDP_functions, calculate_rewards = False)
+airfoil_gen_trajectory = Trajectory(s0, a_params, Total_improvements, policy_params, MDP_functions, calculate_rewards = False)
 s_final = airfoil_gen_trajectory.SARS[-1].s_new
 
 

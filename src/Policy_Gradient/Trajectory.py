@@ -4,7 +4,7 @@ from .Helper import *
 import concurrent.futures
 
 class Trajectory:
-    def __init__(self, s0, T, policy_params, MDP_functions, parallelize = False, calculate_rewards = True):
+    def __init__(self, s0, a_params, T, policy_params, MDP_functions, parallelize = False, calculate_rewards = True):
         self.s0 = s0
         self.r0 = torch.tensor(0.0)
         self.T = T
@@ -13,9 +13,9 @@ class Trajectory:
         self.rewards = torch.zeros(T)
         
         # Generate the trajectory
-        self.generate_trajectory(policy_params, MDP_functions, parallelize, calculate_rewards)
+        self.generate_trajectory(a_params, policy_params, MDP_functions, parallelize, calculate_rewards)
     
-    def generate_trajectory(self, policy_params, MDP_functions, parallelize, calculate_rewards):
+    def generate_trajectory(self, a_params, policy_params, MDP_functions, parallelize, calculate_rewards):
         # Get the MDP functions
         generate_action = MDP_functions['generate_action']
         generate_next_state = MDP_functions['generate_next_state']
@@ -29,7 +29,7 @@ class Trajectory:
         self.r0 = generate_reward(s, s, s)
         for t in range(self.T):
             # Generate action given the state
-            a, action_log_prob = generate_action(s, policy_params)
+            a, action_log_prob = generate_action(s, a_params, policy_params)
             # Generate new state using this action
             s_new = generate_next_state(s, a)
             # Generate the reward
@@ -75,13 +75,13 @@ class SARS_tuple:
         self.s_new = s_new
 
 
-def Generate_trajectories(s0_list, T, N, policy_params, MDP_functions, parallelize):
+def Generate_trajectories(s0_list, a_params, T, N, policy_params, MDP_functions, parallelize):
     trajectory_list = []
     # Generate training batch
     for i_traj in range(N):
         rewards = []
         s0 = s0_list[i_traj]
-        trajectory = Trajectory(s0, T, policy_params, MDP_functions, parallelize = parallelize)
+        trajectory = Trajectory(s0, a_params, T, policy_params, MDP_functions, parallelize = parallelize)
         trajectory_list.append(trajectory)
 
     # If running in parallel, calculate rewards for generated trajectory s, a, s_new pairs afterwards in parallel

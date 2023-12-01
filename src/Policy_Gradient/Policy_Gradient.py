@@ -25,6 +25,7 @@ random.seed(42)
 
 # Define an initial state to start training and then final airfoil shape optimization from
 s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
+a_params = {'idx_tochange': [1, 2, 3, 5, 6], 'a_scaling': (1 / 1000)}
 
 # Define constants and hyperparameters
 state_dim = 5 * 2
@@ -34,9 +35,9 @@ layer_size_list = [100, 100]
 learning_rate_policy_net = 0.001
 learning_rate_Sigma = 0.001
 
-T = 10 # Episode length
-N = 10 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
-epochs = 100 # Total policy improvements - total training updates
+T = 3 # Episode length
+N = 3 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
+epochs = 20 # Total policy improvements - total training updates
 
 # Set parallel compute to true if you want to generate trajectories in parallel
 parallelize = False
@@ -98,7 +99,7 @@ if __name__ == '__main__':
         s0_list = random.choices(Valid_initial_states, k = N)
 
         # Generate trajectories - policy rollout
-        trajectory_list = Generate_trajectories(s0_list, T, N, policy_params, MDP_functions, parallelize)
+        trajectory_list = Generate_trajectories(s0_list, a_params, T, N, policy_params, MDP_functions, parallelize)
 
         # Update list of valid initial states
         add_valid_initial_states(trajectory_list, Valid_initial_states)
@@ -109,8 +110,6 @@ if __name__ == '__main__':
         
         # Get total reward for all the trajectories combined
         Total_Reward = calculate_total_reward(trajectory_list)
-        Total_Reward_list.append(Total_Reward)
-        Epoch_list.append(epoch)
 
         # Compute the gradient loss function and define whether to use causality and baseline
         J = calculate_gradient_objective(trajectory_list, causality = use_causality, baseline = use_baseline)
@@ -125,8 +124,10 @@ if __name__ == '__main__':
             # print(f"Episode {epoch + 1}/{epochs} | Policy Loss: {J.item()}")
             print(f"Episode {epoch + 1}/{epochs} | Total Reward: {Total_Reward.item()}")
             # print(f'Total valid initial states: {len(Valid_initial_states)}')
+            Total_Reward_list.append(Total_Reward)
+            Epoch_list.append(epoch + 1)
             save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer, Valid_initial_states, Epoch_list, Total_Reward_list)
-            plt.plot(Epoch_list[0: epoch + 1: epochs // 20], Total_Reward_list[0: epoch + 1: epochs // 20], '-o', color = 'b')
+            plt.plot(Epoch_list, Total_Reward_list, '-o', color = 'b')
             plt.pause(0.1)
         
         # Update epoch

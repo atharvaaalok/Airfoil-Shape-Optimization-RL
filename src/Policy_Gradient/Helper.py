@@ -38,12 +38,12 @@ def generate_reward(s, a, s_new, airfoil_name = 'my_airfoil'):
 
 
 # Generate action given the state and the policy
-def generate_action(s, policy_params):
+def generate_action(s, a_params, policy_params):
     # Get the parameters
     policy_net = policy_params['policy_net']
     Sigma = policy_params['Sigma']
 
-    idx_tochange = [1, 2, 3, 5, 6]
+    idx_tochange = a_params['idx_tochange']
     s_nn = s[idx_tochange, :]
     s_nn = torch.cat((s_nn[:, 0], s_nn[:, 1]))
 
@@ -60,7 +60,7 @@ def generate_action(s, policy_params):
     # Calculate the log probability of taking this action
     log_prob = distribution.log_prob(a_nn_orig)
 
-    a_scaling = (1 / 1000)
+    a_scaling = a_params['a_scaling']
     a_nn = a_scaling * a_nn_orig
     action_dim = a_nn.shape[0]
     a_nn = torch.stack((a_nn[:action_dim // 2], a_nn[action_dim // 2:]), dim = 1)
