@@ -100,7 +100,7 @@ def CFD(airfoil, Re, angle_of_attack = 0, visualize = False):
     xfoil.stdin.close()
 
     if visualize == True:
-        time.sleep(10)
+        time.sleep(5)
     
     # Get the outputs from xfoil - stop communication if xfoil is stuck in convergence issues
     try:

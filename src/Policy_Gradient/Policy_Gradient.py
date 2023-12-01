@@ -1,23 +1,50 @@
+import os
+
 import torch
 from torch import nn
 from torch import optim
-import numpy as np
+
 import matplotlib.pyplot as plt
 
 from .Helper import *
-from .Trajectory import Trajectory
+from .Trajectory import Trajectory, Generate_trajectories
 
-import concurrent.futures
+
+# Define where to store training progress and the final trained model
+checkpoint_path = os.path.dirname(__file__) + '/Progress_Checkpoint/Checkpoint.pth'
+trained_model_path = os.path.dirname(__file__) + '/Progress_Checkpoint/Trained_Model.pth'
+training_performance_plot_path = os.path.dirname(__file__) + '/Progress_Checkpoint/Total_Reward_vs_Epochs.png'
+
+# Set seed for reproducibity
+torch.manual_seed(42)
+
+
+
+# Define constants and hyperparameters
+state_dim = 5 * 2
+action_dim = 5 * 2
+layer_size_list = [100, 100]
+
+learning_rate_policy_net = 0.001
+learning_rate_Sigma = 0.001
+
+T = 20 # Episode length
+N = 10 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
+epochs = 200 # Total policy improvements - total training updates
+
+# Set parallel compute to true if you want to generate trajectories in parallel
+parallelize = False
+
+# Set reward function
+use_delta_LbyD = False
+
+# Define whether to use causality and baseline
+use_causality = False
+use_baseline = True
+
 
 
 if __name__ == '__main__':
-    # Set seed for reproducibility
-    torch.manual_seed(42)
-
-    # Define constants and hyperparameters
-    state_dim = 5 * 2
-    action_dim = 5 * 2
-    layer_size_list = [50, 50]
 
     # Initialize the policy network with flexible hidden layers
     policy_net = PolicyNetwork(state_dim, action_dim, layer_size_list)
@@ -25,97 +52,75 @@ if __name__ == '__main__':
     # Define the covariance matrix Sigma as a trainable parameter
     Sigma = nn.Parameter(torch.randn(action_dim, action_dim), requires_grad = True)
 
-    # Optimizer
-    learning_rate = 0.001
-    optimizer = optim.Adam(list(policy_net.parameters()) + [Sigma], lr = learning_rate)
+    # Define the optimizer
+    optimizer = optim.Adam([
+        {'params': policy_net.parameters(), 'lr': learning_rate_policy_net},
+        {'params': Sigma, 'lr': learning_rate_Sigma}
+    ])
+    
 
-
-    # Episode length
-    T = 3
-    # Batch size
-    N = 3
-    # Total policy improvements
-    epochs = 20
+    # Prepare for Training
+    # Initialize epoch to 0
+    epoch = 0
+    
+    # Load progress if checkpoint is available
+    if os.path.exists(checkpoint_path):
+        epoch, policy_net, Sigma, optimizer = load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer, learning_rate_policy_net, learning_rate_Sigma)
 
     # Set policy parameters and the MDP functions required to generate trajectories
     policy_params = {'policy_net': policy_net, 'Sigma': Sigma}
     MDP_functions = {'generate_action': generate_action, 'generate_next_state': generate_next_state, 'generate_reward': generate_reward}
 
-    # Set parallel compute to true if you want to generate trajectories in parallel
-    parallelize = False
+    # Make reward and epoch lists to plot the training process
+    Total_Reward_list = []
+    Epoch_list = []
+    # Prepare plot for dynamic updating
+    plt.ion() # Turn on interactive mode
+    plt.xlabel('Epochs')
+    plt.ylabel('Total Reward')
+    plt.title('Total Reward vs Epochs')
+    plt.grid(True)
+    plt.show()
 
-    # Training loop
-    for epoch in range(epochs):
+    while epoch < epochs:
 
-        J = torch.tensor(0.0)
-
-        trajectory_list = []
-        # Generate training batch
-        for i_traj in range(N):
-            rewards = []
-            s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
-
-            trajectory = Trajectory(s0, T, policy_params, MDP_functions, parallelize = parallelize)
-            trajectory_list.append(trajectory)
-
-        # If running in parallel, calculate rewards for generated trajectory s, a, s_new pairs afterwards in parallel
-        if parallelize:
-            # Get s, a, s_new pairs to calculate corresponding rewards in parallel
-            SAS_list = [trajectory.get_SAS_list() for trajectory in trajectory_list]
-            
-            # For all trajectories calculate rewards
-            with concurrent.futures.ProcessPoolExecutor(max_workers = 60) as executor:
-                reward_lists = executor.map(get_trajectory_rewards, SAS_list)
-            
-            # Update the trajectory rewards
-            for trajectory, rewards in zip(trajectory_list, reward_lists):
-                trajectory.set_rewards(rewards)
-        
+        # Generate trajectories - policy rollout
+        trajectory_list = Generate_trajectories(T, N, policy_params, MDP_functions, parallelize)
 
         # Define if to set reward to delta L/D instead of L/D
         for trajectory in trajectory_list:
-            trajectory.use_delta_r(use = True)
+            trajectory.use_delta_r(use = use_delta_LbyD)
         
-        # Get total reward and compute gradient objective loss
+        # Get total reward for all the trajectories combined
         Total_Reward = calculate_total_reward(trajectory_list)
-        J = calculate_gradient_objective(trajectory_list, causality = False, baseline = False)
+        Total_Reward_list.append(Total_Reward)
+        Epoch_list.append(epoch)
 
-        # Update the policy and Sigma
+        # Compute the gradient loss function and define whether to use causality and baseline
+        J = calculate_gradient_objective(trajectory_list, causality = use_causality, baseline = use_baseline)
+
+        # Update the policy network and Sigma
         optimizer.zero_grad()
         J.backward()
         optimizer.step()
 
-        # Print progress
-        if (epoch + 1) % 10 == 0:
+        # Print progress and save models after every 5% progress
+        if (epoch + 1) % (epochs // 20) == 0:
             # print(f"Episode {epoch + 1}/{epochs} | Policy Loss: {J.item()}")
             print(f"Episode {epoch + 1}/{epochs} | Total Reward: {Total_Reward.item()}")
+            save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer)
+            plt.plot(Epoch_list, Total_Reward_list, '-o', color = 'b')
+            plt.pause(0.1)
+        
+        # Update epoch
+        epoch += 1
 
-    quit()
-
-    # Now take actions according to policy to generate an airfoil
-    # Initialize a state
-    s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
-
-    N_airfoil = 100
-    # Run for long time to generate optimized airfoil
-    final_trajectory = Trajectory(s0, N_airfoil, policy_params, MDP_functions)
-    s_final = final_trajectory.SARS[-1].s_new
+    # Upon finishing of training saved the trained model and delete the checkpoint file, also remove any pre-existing trained models
+    if os.path.exists(trained_model_path):
+        os.remove(trained_model_path)
+    os.rename(checkpoint_path, trained_model_path)
 
 
-    # Plot initial airfoil
-    airfoil_coordinates = s0.numpy()
-    plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1], marker = 'o')
-    ax = plt.gca()
-    ax.set_aspect('equal', adjustable='box')
-
-    # Plot final airfoil
-    airfoil_coordinates = s_final.numpy()
-    plt.plot(airfoil_coordinates[:, 0], airfoil_coordinates[:, 1], marker = 'o')
-    ax = plt.gca()
-    ax.set_aspect('equal', adjustable='box')
-    plt.show()
-
-    # Visualize the final airfoil in xfoil
-    airfoil_name = 'final_airfoil'
-    airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
-    airfoil.visualize()
+    # Turn off plot interactive mode and save the plot
+    plt.savefig(training_performance_plot_path)
+    plt.ioff()

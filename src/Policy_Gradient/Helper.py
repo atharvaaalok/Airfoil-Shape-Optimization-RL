@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from torch import optim
 import numpy as np
-import matplotlib.pyplot as plt
 
 from ..CFD.Aerodynamics import Aerodynamics
 
@@ -122,3 +121,37 @@ def get_trajectory_rewards(SAS_list):
     for s, a, s_new in SAS_list:
         reward_list.append(generate_reward(s, a, s_new))
     return reward_list
+
+
+
+def load_checkpoint(checkpoint_path, policy_net, Sigma, optimizer = None, learning_rate_policy_net = None, learning_rate_Sigma = None):
+
+    # Optimizer is None if trained model is to be loaded
+    if optimizer == None:
+        checkpoint = torch.load(checkpoint_path)
+        policy_net.load_state_dict(checkpoint['policy_net_state_dict'])
+        Sigma = checkpoint['Sigma']
+        return (policy_net, Sigma)
+    
+    checkpoint = torch.load(checkpoint_path)
+    epoch = checkpoint['epoch']
+    policy_net.load_state_dict(checkpoint['policy_net_state_dict'])
+    Sigma = checkpoint['Sigma']
+    optimizer = optim.Adam([
+        {'params': policy_net.parameters(), 'lr': learning_rate_policy_net},
+        {'params': Sigma, 'lr': learning_rate_Sigma}
+    ])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    torch.set_rng_state(checkpoint['seed_state'])
+
+    return (epoch, policy_net, Sigma, optimizer)
+
+def save_checkpoint(checkpoint_path, epoch, policy_net, Sigma, optimizer):
+    checkpoint = {
+        'epoch': epoch + 1,
+        'policy_net_state_dict': policy_net.state_dict(),
+        'Sigma': Sigma,
+        'optimizer_state_dict': optimizer.state_dict(),
+        'seed_state': torch.get_rng_state()
+    }
+    torch.save(checkpoint, checkpoint_path)
