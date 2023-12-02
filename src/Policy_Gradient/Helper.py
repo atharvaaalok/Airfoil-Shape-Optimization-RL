@@ -17,7 +17,7 @@ def generate_next_state(s_current, a_current):
 
 # Generate reward corresponding to the state
 def generate_reward(s, a, s_new, airfoil_name = 'my_airfoil'):
-    airfoil_name = str(np.random.rand(1))[3:9]
+    airfoil_name = str(np.random.rand(1))[3:-1]
 
     airfoil_name = 'air' + airfoil_name
      # Get coordinates of airfoil

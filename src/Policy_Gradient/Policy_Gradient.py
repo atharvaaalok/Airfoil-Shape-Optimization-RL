@@ -41,8 +41,8 @@ layer_size_list = [100, 100]
 learning_rate_policy_net = 0.001
 learning_rate_Sigma = 0.001
 
-T = 3 # Episode length
-N = 3 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
+T = 5 # Episode length
+N = 5 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
 epochs = 20 # Total policy improvements - total training updates
 
 # Set parallel compute to true if you want to generate trajectories in parallel

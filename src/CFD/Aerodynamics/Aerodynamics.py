@@ -116,6 +116,9 @@ def CFD(airfoil, Re, angle_of_attack = 0, visualize = False):
         except:
             aerodynamic_properties = None
     finally:
-        # Remove the extra airfoil coordinate file created
-        os.remove(airfoil_save_path)
+        try:
+            # Remove the extra airfoil coordinate file created
+            os.remove(airfoil_save_path)
+        except:
+            pass
         return aerodynamic_properties
