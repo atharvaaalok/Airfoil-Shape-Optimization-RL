@@ -29,8 +29,8 @@ observation, info = training_env.reset()
 # Train PPO on the environment
 model = PPO('MlpPolicy', training_env, verbose = 1, tensorboard_log = log_dir)
 
-TIMESTEPS = 10000
-epochs = 20
+TIMESTEPS = 5000
+epochs = 40
 for i in range(1, epochs):
     model.learn(total_timesteps = TIMESTEPS, reset_num_timesteps = False, tb_log_name = algorithm_name, progress_bar = True)
     model.save(f'{models_dir}/{TIMESTEPS * i}')
