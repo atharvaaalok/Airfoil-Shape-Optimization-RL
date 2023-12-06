@@ -12,6 +12,7 @@ from .Helper import *
 from .Trajectory import Trajectory, Generate_trajectories, add_valid_initial_states
 
 import datetime
+import time
 
 # Print start time
 current_time = datetime.datetime.now()
@@ -30,34 +31,36 @@ random.seed(42)
 
 
 # Define an initial state to start training and then final airfoil shape optimization from
-s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [1, 0]])
-a_params = {'idx_tochange': [1, 2, 3, 5, 6], 'a_scaling': (1 / 1000)}
+s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [0.75, -0.05], [1, 0]])
+a_params = {'idx_tochange': [1, 2, 3, 5, 6, 7], 'a_scaling': (1 / 1000)}
 
 # Define constants and hyperparameters
-state_dim = 5 * 2
-action_dim = 5 * 2
+state_dim = 6 * 2
+action_dim = 6 * 2
 layer_size_list = [100, 100]
 
-learning_rate_policy_net = 0.001
-learning_rate_Sigma = 0.001
+learning_rate_policy_net = 0.01
+learning_rate_Sigma = 0.01
 
 T = 5 # Episode length
 N = 5 # Batch size - number of trajectories each of length T - Set equal to number of parallel workers
-epochs = 20 # Total policy improvements - total training updates
+epochs = 100 # Total policy improvements - total training updates
 
 # Set parallel compute to true if you want to generate trajectories in parallel
 parallelize = False
 
 # Set reward function
-use_delta_LbyD = False
+use_delta_LbyD = True
 
 # Define whether to use causality and baseline
-use_causality = False
+use_causality = True
 use_baseline = True
 
 
 
 if __name__ == '__main__':
+
+    start = time.perf_counter()
 
     # Initialize the policy network with flexible hidden layers
     policy_net = PolicyNetwork(state_dim, action_dim, layer_size_list)
@@ -98,14 +101,26 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.show()
 
+    finish = time.perf_counter()
+    print(f'Initial startup and loading time: {finish - start}')
+
     # print(f'Total valid initial states: {len(Valid_initial_states)}')
     while epoch < epochs:
-
+        start = time.perf_counter()
         # Select initial states to start trajectory generation from. One s0 for each trajectory
         s0_list = random.choices(Valid_initial_states, k = N)
-
+        
         # Generate trajectories - policy rollout
         trajectory_list = Generate_trajectories(s0_list, a_params, T, N, policy_params, MDP_functions, parallelize)
+
+        finish = time.perf_counter()
+        print(f'Trajectory generation time: {finish - start}')
+        non_converged = 0
+        for trajectory in trajectory_list:
+            non_converged += (trajectory.rewards == -50).sum()
+        print(f'Non converged trajectory count: {non_converged}')
+
+        start = time.perf_counter()
 
         # Update list of valid initial states
         add_valid_initial_states(trajectory_list, Valid_initial_states)
@@ -114,19 +129,32 @@ if __name__ == '__main__':
         for trajectory in trajectory_list:
             trajectory.use_delta_r(use = use_delta_LbyD)
         
+        finish = time.perf_counter()
+        print(f'Adding valid initial states time: {finish - start}')
+        
         # Get total reward for all the trajectories combined
         Total_Reward = calculate_total_reward(trajectory_list)
+
+        start = time.perf_counter()
 
         # Compute the gradient loss function and define whether to use causality and baseline
         J = calculate_gradient_objective(trajectory_list, causality = use_causality, baseline = use_baseline)
 
+        finish = time.perf_counter()
+        print(f'J calculation time: {finish - start}')
+
+        start = time.perf_counter()
         # Update the policy network and Sigma
         optimizer.zero_grad()
         J.backward()
         optimizer.step()
 
+        finish = time.perf_counter()
+        print(f'Policy Update time: {finish - start}')
+        
+
         # Print progress and save models after every 5% progress
-        if (epoch + 1) % (epochs // 20) == 0:
+        if (epoch + 1) % (epochs // 10) == 0:
             # print(f"Episode {epoch + 1}/{epochs} | Policy Loss: {J.item()}")
             print(f"Episode {epoch + 1}/{epochs} | Total Reward: {Total_Reward.item()}")
             # print(f'Total valid initial states: {len(Valid_initial_states)}')
@@ -138,6 +166,7 @@ if __name__ == '__main__':
         
         # Update epoch
         epoch += 1
+        print()
 
     # Upon finishing of training saved the trained model and delete the checkpoint file, also remove any pre-existing trained models
     if os.path.exists(trained_model_path):

@@ -100,11 +100,11 @@ def CFD(airfoil, Re, angle_of_attack = 0, visualize = False):
     xfoil.stdin.close()
 
     if visualize == True:
-        time.sleep(5)
+        time.sleep(2)
     
     # Get the outputs from xfoil - stop communication if xfoil is stuck in convergence issues
     try:
-        xfoil_stdout, xfoil_stderr = xfoil.communicate(timeout = 1)
+        xfoil_stdout, xfoil_stderr = xfoil.communicate(timeout = .3)
     except subprocess.TimeoutExpired:
         aerodynamic_properties = None
     else:

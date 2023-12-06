@@ -37,9 +37,9 @@ class Trajectory:
                 r = 0
             else:
                 if calculate_rewards:
-                    r = generate_reward(s, a, s_new)
+                    r = torch.tensor(generate_reward(s, a, s_new))
                 else:
-                    r = 0
+                    r = torch.tensor(0.0)
 
             # Create state-action-reward tuple
             self.SARS.append(SARS_tuple(s, a, r, s_new))
