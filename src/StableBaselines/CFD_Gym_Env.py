@@ -88,7 +88,7 @@ class CFD_Env(gym.Env):
     def close(self):
         pass
 
-    def _generate_reward(s):
+    def _generate_reward(self, s):
         # Generate reward
         airfoil_name = 'air' + str(np.random.rand(1))[3:-1]
         airfoil_coordinates = s
