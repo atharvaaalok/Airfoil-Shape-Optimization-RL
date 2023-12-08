@@ -14,7 +14,7 @@ class CFD_Env(gym.Env):
 
     metadata = {"render_modes": ["human", "no_display"], "render_fps": 4}
 
-    def __init__(self, s0, idx_to_change, max_iterations, a_scaling, valid_states_file_path):
+    def __init__(self, s0, idx_to_change, max_iterations, a_scaling, valid_states_file_path, use_delta_r):
         super(CFD_Env, self).__init__()
         self.action_space = spaces.Box(low = -1, high = 1, shape = (len(idx_to_change) * 2,), dtype = np.float32)
         self.observation_space = spaces.Box(low = -1, high = 2, shape = s0.flatten().shape, dtype = np.float32)
@@ -25,6 +25,10 @@ class CFD_Env(gym.Env):
         self.valid_states_file_path = valid_states_file_path
         self.iter = 0
         self.max_iterations = max_iterations
+
+        self.use_delta_r = use_delta_r
+        self.prev_reward = 0
+        self.new_reward = 0
 
 
     def step(self, action):
@@ -37,18 +41,17 @@ class CFD_Env(gym.Env):
         truncated = False
 
         # Generate reward
-        airfoil_name = 'air' + str(np.random.rand(1))[3:-1]
-        airfoil_coordinates = s_new
-        airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
-        Reynolds_num = 1e6
-        L_by_D_ratio = airfoil.get_L_by_D(Reynolds_num)
+        self.new_reward = self._generate_reward(s_new)
 
-        if L_by_D_ratio == None:
-            L_by_D_ratio = NEGATIVE_REWARD
-            terminated = True
+        if self.use_delta_r:
+            reward = self.new_reward - self.prev_reward
+            self.prev_reward = self.new_reward
+        else:
+            reward = self.new_reward
+            self.prev_reward = self.new_reward
+        
         
         observation = s_new.flatten()
-        reward = L_by_D_ratio
         info = {}
 
         self.iter += 1
@@ -67,6 +70,10 @@ class CFD_Env(gym.Env):
 
         self.s = s_new
 
+        # Set state's reward
+        self.prev_reward = self._generate_reward(s_new)
+        self.new_reward = 0
+
         observation = s_new.flatten()
         # observation = s_new[self.idx_to_change, :].flatten()
         info = {}
@@ -80,6 +87,19 @@ class CFD_Env(gym.Env):
 
     def close(self):
         pass
+
+    def _generate_reward(s):
+        # Generate reward
+        airfoil_name = 'air' + str(np.random.rand(1))[3:-1]
+        airfoil_coordinates = s
+        airfoil = Aerodynamics.Airfoil(airfoil_coordinates, airfoil_name)
+        Reynolds_num = 1e6
+        L_by_D_ratio = airfoil.get_L_by_D(Reynolds_num)
+
+        if L_by_D_ratio == None:
+            L_by_D_ratio = NEGATIVE_REWARD
+        
+        return L_by_D_ratio
 
 
 
