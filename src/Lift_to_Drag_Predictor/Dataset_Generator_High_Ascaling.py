@@ -73,7 +73,7 @@ if __name__ == '__main__':
     # s0 = np.array([[1, 0], [0.75, 0.05], [0.625, 0.075], [0.5, 0.1], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.1], [0.625, -0.075], [0.75, -0.05], [1, 0]])
     idx_to_change = [1, 2, 3, 4, 6, 7, 8, 9]
 
-    max_iterations = 10
+    max_iterations = 5
     # s_new = s0
 
     for iteration in range(max_iterations):

@@ -6,7 +6,7 @@ import numpy as np
 from ..CFD.Aerodynamics import Aerodynamics
 
 
-NEGATIVE_REWARD = -50.0
+NEGATIVE_REWARD = -100.0
 
 
 class CFD_Env(gym.Env):
@@ -14,7 +14,7 @@ class CFD_Env(gym.Env):
 
     metadata = {"render_modes": ["human", "no_display"], "render_fps": 4}
 
-    def __init__(self, s0, idx_to_change, a_scaling, valid_states_file_path):
+    def __init__(self, s0, idx_to_change, max_iterations, a_scaling, valid_states_file_path):
         super(CFD_Env, self).__init__()
         self.action_space = spaces.Box(low = -1, high = 1, shape = (len(idx_to_change) * 2,), dtype = np.float32)
         self.observation_space = spaces.Box(low = -1, high = 2, shape = s0.flatten().shape, dtype = np.float32)
@@ -23,6 +23,8 @@ class CFD_Env(gym.Env):
         self.idx_to_change = idx_to_change
         self.a_scaling = a_scaling
         self.valid_states_file_path = valid_states_file_path
+        self.iter = 0
+        self.max_iterations = max_iterations
 
 
     def step(self, action):
@@ -49,9 +51,16 @@ class CFD_Env(gym.Env):
         reward = L_by_D_ratio
         info = {}
 
+        self.iter += 1
+        if self.iter == self.max_iterations:
+            terminated = True
+        else:
+            terminated = False
+
         return observation, reward, terminated, truncated, info
 
     def reset(self, seed = None, options = None):
+        np.random.seed(seed)
         # Choose a random valid initial state from file
         file_path = self.valid_states_file_path
         s_new = read_random_line(file_path).reshape(-1, 2).astype(np.float32)
@@ -61,6 +70,8 @@ class CFD_Env(gym.Env):
         observation = s_new.flatten()
         # observation = s_new[self.idx_to_change, :].flatten()
         info = {}
+
+        self.iter = 0
 
         return observation, info
 

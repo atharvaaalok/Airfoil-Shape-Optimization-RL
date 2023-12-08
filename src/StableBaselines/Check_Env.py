@@ -12,10 +12,9 @@ valid_states_file_path = os.path.dirname(__file__) + '/Dataset/Arrays_as_rows.tx
 
 
 # Get the environment
-env = CFD_Env(s0, idx_to_change, a_scaling, valid_states_file_path)
+MAX_ITERATIONS = 50
+env = CFD_Env(s0, idx_to_change, MAX_ITERATIONS, a_scaling, valid_states_file_path)
 check_env(env)
-
-
 
 
 # Also run the following

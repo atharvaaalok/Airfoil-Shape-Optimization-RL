@@ -11,12 +11,15 @@ s_list = []
 a_list = []
 
 # Generate initial state
-s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [0.75, -0.05], [1, 0]])
+# s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.5, 0.10], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.10], [0.75, -0.05], [1, 0]])
+s0 = torch.tensor([[1, 0], [0.75, 0.05], [0.625, 0.075], [0.5, 0.1], [0.25, 0.05], [0, 0], [0.25, -0.05], [0.5, -0.1], [0.625, -0.075], [0.75, -0.05], [1, 0]])
+idx_to_change = [1, 2, 3, 4, 6, 7, 8, 9]
 s_list.append(s0)
 
 # Total number of points to represent the shape
 pts_on_curve = s0.shape[0]
-action_idx = [1, 2, 3, 5, 6, 7]
+# action_idx = [1, 2, 3, 5, 6, 7]
+action_idx = [1, 2, 3, 4, 6, 7, 8, 9]
 action_dim = len(action_idx)
 
 # Plot the initial airfoil
@@ -28,7 +31,7 @@ ax.set_aspect('equal', adjustable='box')
 
 
 # Define the experiment run count
-total_exp = 10
+total_exp = 20
 print('Running Experiments\n' + 30 * '-')
 for i_exp in range(total_exp):
     print(f'Experiment Count: {i_exp + 1}')
@@ -36,7 +39,7 @@ for i_exp in range(total_exp):
     s = s_list[i_exp]
 
     # Generate random actions to take
-    num_actions = 10
+    num_actions = 20
     # Calculate the L/D ratio for each new state resulting from the actions and determine the best action
     Rewards = torch.zeros(num_actions + 1)
     a_temp = []
